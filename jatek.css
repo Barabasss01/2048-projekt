@@ -1,0 +1,16 @@
+.kozep {
+    text-align: center;
+}
+
+h1 {
+    text-align: center;
+    font-weight: bold;
+}
+
+.gyozelem {
+    text-align: center;
+    width: 560px;
+    height: 560px;
+    border: 10px solid blue;
+    margin: auto;
+  }
