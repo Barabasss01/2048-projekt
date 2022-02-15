@@ -31,6 +31,7 @@ comicSans = pygame.font.SysFont('Comic Sans MS', 30)
 GRIDSIZE = 5
 TILESIZE = 100
 GAPSIZE = 10
+BORDERSIZE = 5
 
 clock = pygame.time.Clock()
 size = (GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE, GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE)
@@ -40,17 +41,51 @@ screen = pygame.display.set_mode(size)
 class Square:
     def __init__(self, row, col):
         self.rectPos = (row*(TILESIZE+GAPSIZE)+GAPSIZE, col*(TILESIZE+GAPSIZE)+GAPSIZE)
-        self.rect = pygame.Rect(row*(TILESIZE+GAPSIZE)+GAPSIZE, col*(TILESIZE+GAPSIZE)+GAPSIZE, TILESIZE, TILESIZE)
+        self.rect = pygame.Rect(row*(TILESIZE+GAPSIZE)+GAPSIZE+BORDERSIZE, col*(TILESIZE+GAPSIZE)+GAPSIZE+BORDERSIZE, TILESIZE-BORDERSIZE*2, TILESIZE-BORDERSIZE*2)
+        self.borderRect = pygame.Rect(row*(TILESIZE+GAPSIZE)+GAPSIZE, col*(TILESIZE+GAPSIZE)+GAPSIZE, TILESIZE, TILESIZE)
     
     value = 0
+    color = (255, 255, 255)
+    border = (255, 255, 255)
     def _GetColor(self):
-        return "white"
+        if self.value == 2:
+            self.color = (255, 210, 210)
+            self.border = (0, 0, 0)
+        elif self.value == 4:
+            self.color = (255, 170, 170)
+            self.border = (0, 0, 0)
+        elif self.value == 8:
+            self.color = (255, 140, 140)
+            self.border = (0, 0, 0)
+        elif self.value == 16:
+            self.color = (255, 100, 100)
+            self.border = (0, 0, 0)
+        elif self.value == 32:
+            self.color = (255, 60, 60)
+            self.border = (0, 0, 0)
+        elif self.value == 64:
+            self.color = (255, 20, 20)
+            self.border = (0, 0, 0)
+        elif self.value == 128:
+            self.color = (235, 0, 0)
+            self.border = (0, 0, 0)
+        elif self.value == 256:
+            self.color = (200, 0, 0)
+            self.border = (0, 0, 0)
+        elif self.value == 512:
+            self.color = (160, 0, 0)
+            self.border = (0, 0, 0)
+        elif self.value == 1024:
+            self.color = (120, 0, 0)
+            self.border = (0, 0, 0)
 
     def SetValue(self, value):
         self.value = value
     
     def Draw(self):
-        pygame.draw.rect(screen, self._GetColor(), self.rect)
+        self._GetColor()
+        pygame.draw.rect(screen, self.border, self.borderRect)
+        pygame.draw.rect(screen, self.color, self.rect)
         if self.value > 0:
             font = comicSans.render(str(self.value), 1, "black")
             size = comicSans.size(str(self.value))
@@ -58,17 +93,18 @@ class Square:
 
 squares = [[Square(i, k) for k in range(GRIDSIZE)] for i in range(GRIDSIZE)]
 
-squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)].SetValue(10)
+squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)].SetValue(16)
 
 keypress = 0
 
-while 1:
+end = 0
+while not end:
     for e in pygame.event.get():
         if e.type == pygame.QUIT:
-            pygame.quit()
+            end = 1
         if e.type == pygame.KEYDOWN:
             if e.key == pygame.K_ESCAPE:
-                pygame.quit()
+                end = 1
             if not keypress:
                 keypress = e.key
                 print(f"{e.key} was pressed")
