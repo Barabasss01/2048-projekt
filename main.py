@@ -19,6 +19,8 @@ while True:
             screen.blit(text, textRect)
     pygame.display.flip()
 pygame.quit()
+
+
 """
 
 import pygame
