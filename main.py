@@ -1,34 +1,13 @@
-"""
-
-import pygame, sys
-pygame.init()
-
-size = width, height = 560, 560
-screen = pygame.display.set_mode(size)
-screen.fill("azure")
-pygame.display.set_caption('2048 Játék')
-font = pygame.font.Font('freesansbold.ttf', 64)
-text = font.render('Győztél!', True, (0,0,0))
-textRect = text.get_rect()
-textRect.center = (width // 2, height // 2)
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            sys.exit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            screen.blit(text, textRect)
-    pygame.display.flip()
-pygame.quit()
-"""
-
 import pygame
 from random import randint
 
 pygame.init()
+pygame.display.set_caption("2048")
 pygame.font.init()
 comicSans = pygame.font.SysFont('Comic Sans MS', 30)
 
 FRAMES = 60
+INFOBARSIZE = 50
 GRIDSIZE = 5
 TILESIZE = 100
 GAPSIZE = 10
@@ -36,9 +15,9 @@ BORDERSIZE = 5
 
 class Square:
     def __init__(self, row, col):
-        self.rectPos = (row*(TILESIZE+GAPSIZE)+GAPSIZE, col*(TILESIZE+GAPSIZE)+GAPSIZE)
-        self.rect = pygame.Rect(row*(TILESIZE+GAPSIZE)+GAPSIZE+BORDERSIZE, col*(TILESIZE+GAPSIZE)+GAPSIZE+BORDERSIZE, TILESIZE-BORDERSIZE*2, TILESIZE-BORDERSIZE*2)
-        self.borderRect = pygame.Rect(row*(TILESIZE+GAPSIZE)+GAPSIZE, col*(TILESIZE+GAPSIZE)+GAPSIZE, TILESIZE, TILESIZE)
+        self.rectPos = (row*(TILESIZE+GAPSIZE)+GAPSIZE, (col*(TILESIZE+GAPSIZE)+GAPSIZE)+INFOBARSIZE)
+        self.rect = pygame.Rect(row*(TILESIZE+GAPSIZE)+GAPSIZE+BORDERSIZE, (col*(TILESIZE+GAPSIZE)+GAPSIZE+BORDERSIZE)+INFOBARSIZE, TILESIZE-BORDERSIZE*2, TILESIZE-BORDERSIZE*2)
+        self.borderRect = pygame.Rect(row*(TILESIZE+GAPSIZE)+GAPSIZE, (col*(TILESIZE+GAPSIZE)+GAPSIZE)+INFOBARSIZE, TILESIZE, TILESIZE)
     
     value = 0
     color = (255, 255, 255)
@@ -77,6 +56,9 @@ class Square:
         elif self.value == 1024:
             self.color = (120, 0, 0)
             self.border = (0, 0, 0)
+        elif self.value == 2048:
+            self.color = (255, 255, 255)
+            self.border = (0, 0, 0)
 
     def SetValue(self, value):
         self.value = value
@@ -95,22 +77,42 @@ class Square:
 
 class Game:
     def __init__(self):
-        self.size = (GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE, GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE)
+        self.size = (GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE, (GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE)+INFOBARSIZE)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode(self.size)
         self.squares = [[Square(i, k) for k in range(GRIDSIZE)] for i in range(GRIDSIZE)]
         self.squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)].SetValue(2)
+        image = pygame.image.load("./transparent.png")
+        self.winImg = pygame.transform.scale(image, self.size)
+
+    score = 0
+    win = False
+    lose = False
+    winFont = pygame.font.SysFont('Comic Sans MS', 100)
 
     def Render(self):
         self.screen.fill((200, 200, 200))
         for i in self.squares:
             for rect in i:
                 rect.Draw(self.screen)
+        text = f"Score: {self.score}"
+        font = comicSans.render(text, 1, "black")
+        size = comicSans.size(text)
+        self.screen.blit(font, (5, GAPSIZE/2))
+        if self.win or self.lose:
+            surface = pygame.Surface(self.size)
+            surface.set_alpha(100)
+            surface.fill((255, 255, 255))
+            text = "Nyertél!" if self.win else "Vesztettél!"
+            font = self.winFont.render(text, 1, "black")
+            size = self.winFont.size(text)
+            self.winImg.blit(font, (self.size[0]/2-size[0]/2, self.size[1]/2-size[1]/2))
+            self.screen.blit(surface, (0, 0))
+            self.screen.blit(self.winImg, (0, 0))
         self.clock.tick(FRAMES)
 
     def Move(self, dire):
         recurse = False
-        print("Move")
         for colIndex, col in enumerate(self.squares):
             for Index, square in enumerate(col):
                 if not square.value > 0: continue
@@ -175,17 +177,28 @@ class Game:
         for col in self.squares:
             for square in col:
                 if square.value == 0:
-                    print("space")
                     space = True
                     break
-        if not space: return
+        if not space: 
+            self.lose = True
+            return
         random = self.squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)]
         while not random.value == 0:
             random = self.squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)]
         random.SetValue(2)
+        self.score += 1
+        self.winCheck()
+
+    def winCheck(self):
+        for col in self.squares:
+            for square in col:
+                if square.value == 2048:
+                    self.win = True
+                    return
 
 
     def KeyPress(self, key):
+        if self.win or self.lose: return
         if key == pygame.K_UP:
             self.Move(0)
         elif key == pygame.K_RIGHT:
