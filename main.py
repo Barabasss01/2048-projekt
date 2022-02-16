@@ -19,8 +19,6 @@ while True:
             screen.blit(text, textRect)
     pygame.display.flip()
 pygame.quit()
-
-
 """
 
 import pygame
@@ -30,15 +28,11 @@ pygame.init()
 pygame.font.init()
 comicSans = pygame.font.SysFont('Comic Sans MS', 30)
 
+FRAMES = 60
 GRIDSIZE = 5
 TILESIZE = 100
 GAPSIZE = 10
 BORDERSIZE = 5
-
-clock = pygame.time.Clock()
-size = (GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE, GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE)
-
-screen = pygame.display.set_mode(size)
 
 class Square:
     def __init__(self, row, col):
@@ -50,7 +44,10 @@ class Square:
     color = (255, 255, 255)
     border = (255, 255, 255)
     def _GetColor(self):
-        if self.value == 2:
+        if self.value == 0:
+            self.color = (255, 255, 255)
+            self.border = (255, 255, 255)
+        elif self.value == 2:
             self.color = (255, 210, 210)
             self.border = (0, 0, 0)
         elif self.value == 4:
@@ -83,8 +80,11 @@ class Square:
 
     def SetValue(self, value):
         self.value = value
+
+    def __repr__(self):
+        return str(self.value) 
     
-    def Draw(self):
+    def Draw(self, screen):
         self._GetColor()
         pygame.draw.rect(screen, self.border, self.borderRect)
         pygame.draw.rect(screen, self.color, self.rect)
@@ -93,9 +93,111 @@ class Square:
             size = comicSans.size(str(self.value))
             screen.blit(font, (self.rectPos[0]+TILESIZE/2-size[0]/2, self.rectPos[1]+TILESIZE/2-size[1]/2))
 
-squares = [[Square(i, k) for k in range(GRIDSIZE)] for i in range(GRIDSIZE)]
+class Game:
+    def __init__(self):
+        self.size = (GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE, GRIDSIZE*TILESIZE+(GRIDSIZE+1)*GAPSIZE)
+        self.clock = pygame.time.Clock()
+        self.screen = pygame.display.set_mode(self.size)
+        self.squares = [[Square(i, k) for k in range(GRIDSIZE)] for i in range(GRIDSIZE)]
+        self.squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)].SetValue(2)
 
-squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)].SetValue(16)
+    def Render(self):
+        self.screen.fill((200, 200, 200))
+        for i in self.squares:
+            for rect in i:
+                rect.Draw(self.screen)
+        self.clock.tick(FRAMES)
+
+    def Move(self, dire):
+        recurse = False
+        print("Move")
+        for colIndex, col in enumerate(self.squares):
+            for Index, square in enumerate(col):
+                if not square.value > 0: continue
+                if dire == 0:
+                    if Index == 0: continue
+                    if not self.squares[colIndex][Index-1].value == 0:
+                        if self.squares[colIndex][Index-1].value == self.squares[colIndex][Index].value:
+                            recurse = True
+                            self.squares[colIndex][Index-1].SetValue(square.value+square.value)
+                            self.squares[colIndex][Index].SetValue(0)
+                            continue
+                        else:
+                            continue
+
+                    recurse = True
+                    self.squares[colIndex][Index-1].SetValue(square.value)
+                    self.squares[colIndex][Index].SetValue(0)
+                elif dire == 1:
+                    if colIndex == len(self.squares)-1: continue
+                    if not self.squares[colIndex+1][Index].value == 0:
+                        if self.squares[colIndex+1][Index].value == self.squares[colIndex][Index].value:
+                            recurse = True
+                            self.squares[colIndex+1][Index].SetValue(square.value+square.value)
+                            self.squares[colIndex][Index].SetValue(0)
+                            continue
+                        else:
+                            continue
+                    recurse = True
+                    self.squares[colIndex+1][Index].SetValue(square.value)
+                    self.squares[colIndex][Index].SetValue(0)
+                elif dire == 2:
+                    if Index == len(col)-1: continue
+                    if not self.squares[colIndex][Index+1].value == 0:
+                        if self.squares[colIndex][Index+1].value == self.squares[colIndex][Index].value:
+                            recurse = True
+                            self.squares[colIndex][Index+1].SetValue(square.value+square.value)
+                            self.squares[colIndex][Index].SetValue(0)
+                            continue
+                        else:
+                            continue
+                    recurse = True
+                    self.squares[colIndex][Index+1].SetValue(square.value)
+                    self.squares[colIndex][Index].SetValue(0)
+                elif dire == 3:
+                    if colIndex == 0: continue
+                    if not self.squares[colIndex-1][Index].value == 0:
+                        if self.squares[colIndex-1][Index].value == self.squares[colIndex][Index].value:
+                            recurse = True
+                            self.squares[colIndex-1][Index].SetValue(square.value+square.value)
+                            self.squares[colIndex][Index].SetValue(0)
+                            continue
+                        else:
+                            continue
+                    recurse = True
+                    self.squares[colIndex-1][Index].SetValue(square.value)
+                    self.squares[colIndex][Index].SetValue(0)
+        
+        if recurse:
+            self.Move(dire)
+            return
+        space = False
+        for col in self.squares:
+            for square in col:
+                if square.value == 0:
+                    print("space")
+                    space = True
+                    break
+        if not space: return
+        random = self.squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)]
+        while not random.value == 0:
+            random = self.squares[randint(0, GRIDSIZE-1)][randint(0, GRIDSIZE-1)]
+        random.SetValue(2)
+
+
+    def KeyPress(self, key):
+        if key == pygame.K_UP:
+            self.Move(0)
+        elif key == pygame.K_RIGHT:
+            self.Move(1)
+        elif key == pygame.K_DOWN:
+            self.Move(2)
+        elif key == pygame.K_LEFT:
+            self.Move(3)
+
+
+
+Instance = Game()
 
 keypress = 0
 
@@ -109,15 +211,10 @@ while not end:
                 end = 1
             if not keypress:
                 keypress = e.key
-                print(f"{e.key} was pressed")
+                Instance.KeyPress(e.key)
         if e.type == pygame.KEYUP:
             if keypress == e.key:
                 keypress = 0
-                print(f"{e.key} was released")
-
-    screen.fill((200, 200, 200))
-    for i in squares:
-        for rect in i:
-            rect.Draw()
-    clock.tick(60)
+    
+    Instance.Render()
     pygame.display.flip()
