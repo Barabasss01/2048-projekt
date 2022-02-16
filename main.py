@@ -95,7 +95,7 @@ class Game:
         for i in self.squares:
             for rect in i:
                 rect.Draw(self.screen)
-        text = f"Score: {self.score}"
+        text = f"Moves: {self.score}"
         font = comicSans.render(text, 1, "black")
         size = comicSans.size(text)
         self.screen.blit(font, (5, GAPSIZE/2))
